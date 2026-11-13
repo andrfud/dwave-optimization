@@ -1,0 +1,32 @@
+name: long double benchmark
+
+# Throwaway: runs long_double_bench.cpp on GitHub's x86-64 and arm64 Linux runners.
+on:
+  push:
+    branches: [experiment/aarch64-long-double]
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Machine
+        run: |
+          uname -m
+          g++ --version | head -1
+          lscpu | grep -E "Architecture|Model name|^CPU\(s\)" || true
+      - name: Build
+        run: g++ -std=c++17 -O3 -o bench long_double_bench.cpp
+      - name: Software 128-bit routines the binary calls
+        run: nm -u bench | grep -E "__(add|mul|sub|div)tf3|__extenddftf2|__trunctfdf2" || echo "none"
+      - name: Run
+        run: ./bench
+      - name: Run again
+        run: ./bench
